@@ -1,26 +1,51 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Earth tones - primary */
+  --color-earth-50: #faf6f1;
+  --color-earth-100: #f0e8db;
+  --color-earth-200: #e0d0b8;
+  --color-earth-300: #c9b08a;
+  --color-earth-400: #b39162;
+  --color-earth-500: #9a7545;
+  --color-earth-600: #7d5d36;
+  --color-earth-700: #63472a;
+  --color-earth-800: #4a3420;
+  --color-earth-900: #352518;
+  --color-earth-950: #1c1309;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Sage green - regenerative */
+  --color-sage-50: #f4f7f4;
+  --color-sage-100: #e3ebe3;
+  --color-sage-200: #c6d6c6;
+  --color-sage-300: #9db89d;
+  --color-sage-400: #6f946f;
+  --color-sage-500: #4f774f;
+  --color-sage-600: #3c5e3c;
+  --color-sage-700: #314c31;
+  --color-sage-800: #283d28;
+  --color-sage-900: #203220;
+  --color-sage-950: #111c11;
+
+  /* Wine accent */
+  --color-wine-500: #722F37;
+  --color-wine-600: #5c262d;
+  --color-wine-700: #471d23;
+
+  /* Cream background */
+  --color-cream: #FAF7F2;
+
+  /* Fonts */
+  --font-heading: var(--font-playfair), Georgia, serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-cream);
+  color: var(--color-earth-900);
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
 }
