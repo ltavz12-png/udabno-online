@@ -6,7 +6,7 @@
   "description": "The Life Engine — a provably-fair HTML5 iGaming product in the crash family.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "server": "tsx server/index.ts",
     "test": "vitest run",
@@ -17,7 +17,6 @@
     "e2e": "playwright test"
   },
   "dependencies": {
-    "@pixi/filter-advanced-bloom": "^5.1.1",
     "howler": "^2.2.4",
     "pixi.js": "^8.6.6",
     "react": "^18.3.1",
