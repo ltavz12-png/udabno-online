@@ -57,7 +57,7 @@ export function App() {
 
         <div className="spacer" />
 
-        {g.status === 'living' ? <LiveHud /> : g.status !== 'loading' ? <PreLifePanel /> : null}
+        {g.status === 'living' ? <LiveHud /> : g.status === 'idle' ? <PreLifePanel /> : null}
 
         <aside className={`side ${sideOpen ? 'open' : ''}`} aria-label="social and fairness">
           <div className="side-scroll">

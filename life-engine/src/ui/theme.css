@@ -186,8 +186,8 @@ body {
 input.text { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--stroke); color: var(--ink); border-radius: 8px; padding: 8px; font-size: 12px; }
 
 /* ---- Reckoning overlay ---- */
-.reckoning { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; background: radial-gradient(ellipse at center, rgba(10,6,24,0.4), rgba(4,2,10,0.85)); backdrop-filter: blur(3px); animation: fade .4s ease; }
-.reckoning-card { text-align: center; padding: 28px; max-width: 380px; }
+.reckoning { position: fixed; inset: 0; z-index: 5; display: grid; place-items: end center; padding-bottom: 6vh; background: radial-gradient(ellipse at 50% 30%, rgba(10,6,24,0.10), rgba(4,2,10,0.72)); animation: fade .5s ease; }
+.reckoning-card { text-align: center; padding: 24px 28px; max-width: 380px; background: rgba(10,7,22,0.55); border: 1px solid var(--stroke); border-radius: var(--radius); backdrop-filter: blur(10px); box-shadow: var(--shadow); }
 .reckoning-card .verdict { font-family: var(--serif); font-size: 34px; margin: 0; }
 .reckoning-card .poem { color: var(--ink-dim); font-family: var(--serif); font-size: 18px; font-style: italic; margin: 6px 0 18px; }
 .reckoning-card .payout { font-size: 44px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
