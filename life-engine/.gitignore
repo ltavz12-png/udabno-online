@@ -10,3 +10,7 @@ server/**/*.js
 src/**/*.js
 scripts/**/*.js
 config/**/*.js
+
+# single-file build outputs
+dist-single
+the-life-engine.html
