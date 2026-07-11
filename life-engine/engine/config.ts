@@ -42,6 +42,15 @@ export interface BeyondConfig {
 export interface GameConfig {
   /** House edge e. RTP = 1 - e. Default 0.03 → 97% RTP. */
   readonly houseEdge: number;
+  /**
+   * Mean multiplier the three-outcome Beyond pays on the worth-at-death, in
+   * [0, 1). >0 means dying is no longer a flat loss: it resolves into
+   * Legacy/Nothing/Dark End on the worth reached. This payout is funded by
+   * steepening the mortality curve by exactly the right amount, so RTP stays
+   * fixed and identical for every strategy (see MATH.md). 0 = classic crash
+   * (death pays nothing).
+   */
+  readonly deathBeyondMean: number;
   readonly currency: string;
   readonly locale: string;
   readonly minBet: number;
@@ -65,6 +74,7 @@ export interface GameConfig {
 
 export const DEFAULT_CONFIG: GameConfig = {
   houseEdge: 0.03,
+  deathBeyondMean: 0.25,
   currency: 'USD',
   locale: 'en-US',
   minBet: 0.1,

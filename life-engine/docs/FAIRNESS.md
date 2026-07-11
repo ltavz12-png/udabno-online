@@ -26,7 +26,8 @@ change `serverSeed` without changing the hash, and because the player controls
 ```
 digest = HMAC-SHA256(key = serverSeed, message = `${clientSeed}:${nonce}`)
 u      = first 52 bits of digest  ÷  2^52          → uniform in [0, 1)
-M      = max(1, (1 − e) / (1 − u))                 → the mortality point
+M      = max(1, ((1 − e) / (1 − u)) ^ (1 − μ))     → the mortality point
+                                                     (μ = deathBeyondMean; see MATH.md)
 ```
 
 Implemented in `engine/fairness.ts` (`deriveFairness`, `uniformFromDigest`) and

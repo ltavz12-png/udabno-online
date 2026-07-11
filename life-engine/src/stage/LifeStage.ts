@@ -10,7 +10,7 @@
 import { Application, Container } from 'pixi.js';
 import { World } from './World';
 import { ProceduralAvatar, type AvatarView } from './AvatarView';
-import { lifeStageForWorth, stageProgress, LIFE_STAGES } from '../../engine/worth';
+import { lifeStageForAge, ageStageProgress, LIFE_STAGES } from '../../engine/worth';
 import type { SkinConfig } from '../skins/types';
 import type { Ending } from '../../engine/round';
 import type { BeyondOutcome } from '../../engine/beyond';
@@ -19,6 +19,7 @@ import type { OtherLife } from '../state/social';
 export interface StageInput {
   active: boolean; // a life is being lived (or in reckoning)
   worth: number;
+  lifeAge: number;
   vitality: number;
   pace: 'push' | 'coast' | 'tend';
   dispositionId: string;
@@ -38,6 +39,7 @@ export class LifeStage {
   private avatar: AvatarView;
   private input: StageInput | null = null;
   private displayWorth = 1;
+  private displayAge = 0;
   private displayVitality = 1;
   private lastEnding: Ending | null = null;
   private elapsed = 0;
@@ -90,15 +92,17 @@ export class LifeStage {
     const skin = inp?.skin;
     if (!inp || !skin) return;
 
-    // Smooth Worth & vitality toward targets.
+    // Smooth Worth, age & vitality toward targets.
     const targetWorth = inp.active ? Math.max(1, inp.worth) : 1;
+    const targetAge = inp.active ? inp.lifeAge : 0;
     const targetVit = inp.active ? inp.vitality : 1;
     const ease = inp.reducedMotion ? 1 : 1 - Math.pow(0.001, dtSec);
     this.displayWorth += (targetWorth - this.displayWorth) * ease;
+    this.displayAge += (targetAge - this.displayAge) * ease;
     this.displayVitality += (targetVit - this.displayVitality) * ease;
 
-    const idx = LIFE_STAGES.indexOf(lifeStageForWorth(this.displayWorth));
-    const prog = stageProgress(this.displayWorth);
+    const idx = LIFE_STAGES.indexOf(lifeStageForAge(this.displayAge));
+    const prog = ageStageProgress(this.displayAge);
     if (idx !== this.lastStageIndex && inp.active) {
       this.lastStageIndex = idx;
       this.onCue?.(idx <= 1 ? 'birth' : 'milestone');
@@ -122,10 +126,12 @@ export class LifeStage {
       dtSec,
     );
 
-    // Position & fade the avatar.
+    // Position, scale & fade the avatar. Scale up on smaller viewports so the
+    // life stays a prominent, legible figure on phones.
     this.avatarLayer.x = w * 0.42;
     this.avatarLayer.y = h * 0.8;
-    this.avatarLayer.alpha = inp.active ? 1 : 0.5;
+    this.avatarLayer.scale.set(Math.min(1.7, Math.max(1.1, h / 620)));
+    this.avatarLayer.alpha = inp.active ? 1 : 0.55;
 
     this.avatar.update(
       {

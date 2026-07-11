@@ -25,7 +25,8 @@ import {
   advanceWorth,
   advanceVitality,
   growthRate,
-  lifeStageForWorth,
+  agingRatePerSecond,
+  lifeStageForAge,
   type Pace,
   type LifeStage,
 } from './worth';
@@ -87,8 +88,21 @@ export function resolveLife(input: LifeInputs): LifeOutcome {
     return { ending, worthAtEnd, beyond: null, payoutMultiplier: worthAtEnd };
   }
 
-  // Worth reached mortality before the player rested — the thread is cut.
-  return { ending: 'sudden-death', worthAtEnd: 0, beyond: null, payoutMultiplier: 0 };
+  // Worth reached mortality — the life resolves into The Beyond on the worth it
+  // reached. Three outcomes (Legacy / Nothing / Dark End), mean = deathBeyondMean.
+  // An instant end at birth (worth ≈ 1) leaves nothing behind. This positive
+  // death payout is funded by the steepened mortality curve, so RTP is unchanged.
+  const worthAtDeath = mortality;
+  if (cfg.deathBeyondMean <= 0 || worthAtDeath <= 1) {
+    return { ending: 'sudden-death', worthAtEnd: worthAtDeath, beyond: null, payoutMultiplier: 0 };
+  }
+  const beyond = resolveBeyond(beyondUniform, boldness, cfg.beyond);
+  return {
+    ending: 'sudden-death',
+    worthAtEnd: worthAtDeath,
+    beyond,
+    payoutMultiplier: worthAtDeath * cfg.deathBeyondMean * beyond.multiplier,
+  };
 }
 
 /* ------------------------------------------------------------------ *
@@ -102,6 +116,8 @@ export interface LiveState {
   vitality: number;
   pace: Pace;
   elapsedMs: number;
+  /** Accumulated life-age (drives the body's aging), independent of worth. */
+  lifeAge: number;
   stage: LifeStage;
   target: number;
   ending: Ending | null;
@@ -119,6 +135,7 @@ export class LifeRound {
   private vitality = 1.0;
   private pace: Pace = 'coast';
   private elapsedMs = 0;
+  private lifeAge = 0;
   private phase: Phase = 'live';
   private ending: Ending | null = null;
   private outcome: LifeOutcome | null = null;
@@ -128,7 +145,7 @@ export class LifeRound {
     this.declaration = declaration;
     this.cfg = cfg;
     const { u } = deriveFairness(fairness);
-    this.mortality = mortalityFromUniform(u, cfg.houseEdge);
+    this.mortality = mortalityFromUniform(u, cfg.houseEdge, cfg.deathBeyondMean);
     this.beyondUniform = deriveBeyondUniform(fairness);
     this.serverSeedHash = hashServerSeed(fairness.serverSeed);
     this.ambitionTarget = declaration.ambition.target;
@@ -156,6 +173,7 @@ export class LifeRound {
       this.pace,
       this.declaration.disposition.vitalityDrain,
     );
+    this.lifeAge += (dtMs / 1000) * agingRatePerSecond(this.pace, this.declaration.disposition.worthRate);
     this.elapsedMs += dtMs;
 
     if (this.worth >= this.mortality) {
@@ -198,7 +216,8 @@ export class LifeRound {
       vitality: this.vitality,
       pace: this.pace,
       elapsedMs: this.elapsedMs,
-      stage: lifeStageForWorth(this.worth),
+      lifeAge: this.lifeAge,
+      stage: lifeStageForAge(this.lifeAge),
       target: this.ambitionTarget,
       ending: this.ending,
       outcome: this.outcome,

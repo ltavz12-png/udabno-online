@@ -44,6 +44,13 @@ Tolerance is \`max(0.1%, 4·SE)\` — the standard-error term keeps the assertio
 statistically sound for high-variance buckets (large targets, Beyond wager),
 where 0.1% is below the achievable precision even at ten million rounds.
 
+The **never rest (push to death)** bucket is intentionally pathological: its
+payout is proportional to the (heavy-tailed) worth-at-death, so its variance is
+theoretically unbounded and its finite-sample RTP converges slowly and from
+below (the rare Legacy-on-huge-worth events dominate the mean). Its expectation
+is provably exactly \`1 − e\` — \`deathBeyondMean · E[M] = ${DEFAULT_CONFIG.deathBeyondMean} · ${(( (1 - DEFAULT_CONFIG.houseEdge) * (1 / (1 - DEFAULT_CONFIG.deathBeyondMean)) / (1 / (1 - DEFAULT_CONFIG.deathBeyondMean) - 1) )).toFixed(2)} = ${(DEFAULT_CONFIG.deathBeyondMean * ((1 - DEFAULT_CONFIG.houseEdge) * (1 / (1 - DEFAULT_CONFIG.deathBeyondMean)) / (1 / (1 - DEFAULT_CONFIG.deathBeyondMean) - 1))).toFixed(3)}\` — see MATH.md. Every bounded-target
+strategy (the meaningful class) converges tightly to 97%.
+
 | Strategy bucket | Rounds | Realised RTP | Deviation | Std. error | Pass |
 | --- | ---: | ---: | ---: | ---: | :---: |
 ${rows}

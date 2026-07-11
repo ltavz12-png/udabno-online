@@ -35,9 +35,26 @@ describe('resolveLife (pure money core)', () => {
     expect(o.payoutMultiplier).toBeCloseTo(12, 10);
   });
 
-  it('sudden death pays zero', () => {
+  it('sudden death resolves into the three-outcome Beyond on worth-at-death', () => {
     const o = resolveLife({
       mortality: 2,
+      restWorth: 8,
+      target: 12,
+      beyondWager: false,
+      beyondUniform: 0.5,
+      boldness: 0.5,
+      cfg,
+    });
+    expect(o.ending).toBe('sudden-death');
+    expect(o.beyond).not.toBeNull();
+    // payout = worthAtDeath · deathBeyondMean · bucketMultiplier (> 0).
+    expect(o.payoutMultiplier).toBeCloseTo(2 * cfg.deathBeyondMean * o.beyond!.multiplier, 10);
+    expect(o.payoutMultiplier).toBeGreaterThan(0);
+  });
+
+  it('an instant end at birth leaves nothing behind', () => {
+    const o = resolveLife({
+      mortality: 1,
       restWorth: 8,
       target: 12,
       beyondWager: false,

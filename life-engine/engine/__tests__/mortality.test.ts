@@ -37,4 +37,24 @@ describe('mortality distribution', () => {
       expect(Math.abs(empirical - theory)).toBeLessThan(0.002);
     });
   });
+
+  it('a death dividend steepens the curve (you die sooner) matching theory', () => {
+    const rng = mulberry32(5);
+    const mu = 0.35;
+    const N = 3_000_000;
+    const targets = [1.5, 2, 5, 10];
+    const counts = targets.map(() => 0);
+    for (let i = 0; i < N; i++) {
+      const m = mortalityFromUniform(rng(), e, mu);
+      targets.forEach((v, k) => {
+        if (m >= v) counts[k]++;
+      });
+    }
+    targets.forEach((v, k) => {
+      const empirical = counts[k] / N;
+      const theory = survivalProbability(v, e, mu);
+      expect(theory).toBeLessThan(survivalProbability(v, e)); // steeper than crash
+      expect(Math.abs(empirical - theory)).toBeLessThan(0.002);
+    });
+  });
 });

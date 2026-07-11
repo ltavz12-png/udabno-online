@@ -41,6 +41,7 @@ export function StageCanvas({ skinId }: { skinId: string }) {
       stage.setInput({
         active,
         worth: view?.worth ?? 1,
+        lifeAge: view?.lifeAge ?? 0,
         vitality: view?.vitality ?? 1,
         pace: view?.pace ?? 'coast',
         dispositionId: disp,

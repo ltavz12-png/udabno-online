@@ -154,10 +154,27 @@ export class ProceduralAvatar implements AvatarView {
     const shoL = { x: -p.shoulderW / 2 + stoopX, y: shoulderY };
     const shoR = { x: p.shoulderW / 2 + stoopX, y: shoulderY };
 
-    // Legs (swing opposite each other).
+    // Legs (swing opposite each other) with feet.
     const legReach = p.legLen * 0.5;
-    this.limb(hipL, { x: hipL.x - swing * legReach, y: 0 }, th);
-    this.limb(hipR, { x: hipR.x + swing * legReach, y: 0 }, th);
+    const footL = { x: hipL.x - swing * legReach, y: 0 };
+    const footR = { x: hipR.x + swing * legReach, y: 0 };
+    this.limb(hipL, footL, th);
+    this.limb(hipR, footR, th);
+    const footW = th * 0.9;
+    this.figure.ellipse(footL.x + footW * 0.3, footL.y, footW, th * 0.45).fill({ color: skinCol, alpha: 0.95 });
+    this.figure.ellipse(footR.x + footW * 0.3, footR.y, footW, th * 0.45).fill({ color: skinCol, alpha: 0.95 });
+
+    // A flowing robe/mantle for the later stages (prime, elder) — reads as station.
+    if (state.stageIndex >= 4) {
+      const drape = p.torsoLen * 0.9;
+      this.figure
+        .moveTo(shoL.x, shoL.y + 4)
+        .quadraticCurveTo(hipL.x - th, hipY + drape * 0.5, footL.x - th, drape * 0.2)
+        .lineTo(footR.x + th, drape * 0.2)
+        .quadraticCurveTo(hipR.x + th, hipY + drape * 0.5, shoR.x, shoR.y + 4)
+        .closePath()
+        .fill({ color: accent, alpha: 0.28 });
+    }
 
     // Torso — a tapered trunk from hips to shoulders.
     this.figure
@@ -168,29 +185,44 @@ export class ProceduralAvatar implements AvatarView {
       .closePath()
       .fill({ color: skinCol, alpha: 0.97 });
 
-    // Arms (swing opposite the legs). Elder's right arm holds a staff (still).
+    // Arms (swing opposite the legs) with hands. Elder's right hand holds a staff.
     const armReach = p.armLen;
     const armSwing = swing * 0.8;
-    this.limb(shoL, { x: shoL.x + armSwing * armReach * 0.5, y: shoulderY + armReach }, th * 0.85);
+    const handL = { x: shoL.x + armSwing * armReach * 0.5, y: shoulderY + armReach };
+    this.limb(shoL, handL, th * 0.85);
+    this.figure.circle(handL.x, handL.y, th * 0.5).fill({ color: skinCol, alpha: 0.95 });
     if (p.staff > 0.4) {
       const handX = shoR.x + 10, handY = shoulderY + armReach;
       this.limb(shoR, { x: handX, y: handY }, th * 0.85);
-      // staff
-      this.figure.moveTo(handX + 4, handY - armReach * 0.3).lineTo(handX + 8, 2).stroke({ width: 3, color: accent, alpha: 0.6, cap: 'round' });
+      this.figure.circle(handX, handY, th * 0.5).fill({ color: skinCol, alpha: 0.95 });
+      this.figure.moveTo(handX + 4, handY - armReach * 0.3).lineTo(handX + 9, 2).stroke({ width: 3, color: accent, alpha: 0.65, cap: 'round' });
+      this.figure.circle(handX + 4, handY - armReach * 0.3, 3).fill({ color: hexNum(skin.auraGlow), alpha: 0.7 });
     } else {
-      this.limb(shoR, { x: shoR.x - armSwing * armReach * 0.5, y: shoulderY + armReach }, th * 0.85);
+      const handR = { x: shoR.x - armSwing * armReach * 0.5, y: shoulderY + armReach };
+      this.limb(shoR, handR, th * 0.85);
+      this.figure.circle(handR.x, handR.y, th * 0.5).fill({ color: skinCol, alpha: 0.95 });
     }
 
     // Neck + head.
     this.figure.moveTo(stoopX, shoulderY).lineTo(stoopX, headY + p.headR * 0.6).stroke({ width: th * 0.7, color: skinCol, cap: 'round' });
     this.figure.circle(stoopX, headY, p.headR).fill({ color: skinCol, alpha: 0.99 });
 
-    // Attire accent that accrues with the life (a sash, then a mantle).
-    if (state.stageIndex >= 2) {
+    // Hair — ages with the life: a soft tuft young, greying and receding old.
+    const hairColor =
+      state.stageIndex >= 5 ? mix(skinCol, 0xffffff, 0.7)
+      : state.stageIndex >= 4 ? mix(accent, 0xcfcfcf, 0.5)
+      : accent;
+    const hairR = p.headR * (state.stageIndex >= 5 ? 0.72 : 1.04);
+    this.figure
+      .ellipse(stoopX, headY - p.headR * 0.42, hairR, p.headR * 0.62)
+      .fill({ color: hairColor, alpha: 0.9 });
+
+    // A calm face-light — the spark of self.
+    this.figure.circle(stoopX + p.headR * 0.2, headY + p.headR * 0.05, p.headR * 0.18).fill({ color: hexNum(skin.auraGlow), alpha: 0.55 });
+
+    // Sash that accrues in youth/adulthood.
+    if (state.stageIndex >= 2 && state.stageIndex < 4) {
       this.figure.moveTo(shoL.x, shoL.y + 2).lineTo(hipR.x, hipY - 2).stroke({ width: 3.5, color: accent, alpha: 0.5, cap: 'round' });
-    }
-    if (state.stageIndex >= 4) {
-      this.figure.moveTo(shoL.x, shoL.y).quadraticCurveTo(stoopX, shoulderY + p.torsoLen * 0.7, shoR.x, shoR.y).stroke({ width: 2.5, color: accent, alpha: 0.4 });
     }
 
     // --- Endings.
@@ -217,8 +249,8 @@ export class ProceduralAvatar implements AvatarView {
     const t = this.endingT;
     this.soul.clear();
 
-    if (this.endingKind === 'sudden-death') {
-      // A star falls — quiet, not violent: the light streaks down and out.
+    if (this.endingKind === 'sudden-death' && !this.endingBucket) {
+      // Classic crash end (no death Beyond): the light falls, quiet, and out.
       const a = Math.max(0, 1 - t * 0.7);
       const y = headY + t * 220;
       this.soul.circle(0, y, 10 + t * 5).fill({ color: hexNum(skin.auraCore), alpha: a });
@@ -226,35 +258,44 @@ export class ProceduralAvatar implements AvatarView {
       return;
     }
 
-    // Rest / fulfil / Beyond — the soul-light rises and resolves, large & central.
-    const rise = headY - t * 150;
+    // Death now resolves The Beyond: a brief flare where the thread is cut, then
+    // the soul rises and resolves into Legacy / Nothing / Dark End.
+    const died = this.endingKind === 'sudden-death';
+    if (died && t < 0.5) {
+      // The thread is cut — a sharp inward flare before the ascension.
+      const f = t / 0.5;
+      this.soul.circle(0, headY, 30 * (1 - f) + 6).fill({ color: hexNum(skin.auraCore), alpha: 0.7 * (1 - f) + 0.2 });
+      return;
+    }
+    const et = died ? t - 0.5 : t; // ascension time
+    const rise = headY - et * 150;
     const bucket = this.endingBucket;
     const color =
       bucket === 'legacy' ? hexNum(skin.legacy) : bucket === 'dark' ? hexNum(skin.figureAccent) : hexNum(skin.auraGlow);
     const bloom = bucket === 'legacy' ? 1.8 : bucket === 'dark' ? 0.55 : 1.0;
-    const a = Math.max(0, 1 - t * 0.32);
+    const a = Math.max(0, 1 - et * 0.32);
 
     // Rising soul orb.
     this.soul
-      .circle(0, rise, (40 + t * 55) * bloom).fill({ color, alpha: 0.42 * a })
-      .circle(0, rise, (16 + t * 14) * bloom).fill({ color: hexNum(skin.auraCore), alpha: 0.85 * a });
+      .circle(0, rise, (40 + et * 55) * bloom).fill({ color, alpha: 0.42 * a })
+      .circle(0, rise, (16 + et * 14) * bloom).fill({ color: hexNum(skin.auraCore), alpha: 0.85 * a });
 
     if (bucket === 'legacy') {
       // A lasting constellation blooms outward.
-      const ringA = Math.max(0, 0.6 - t * 0.5);
-      this.soul.circle(0, rise, 30 + t * 120).stroke({ width: 2, color, alpha: ringA });
+      const ringA = Math.max(0, 0.6 - et * 0.5);
+      this.soul.circle(0, rise, 30 + et * 120).stroke({ width: 2, color, alpha: ringA });
       const motes = 12;
       for (let i = 0; i < motes; i++) {
-        const ang = (i / motes) * Math.PI * 2 + t * 0.6;
-        const rad = 40 + t * 130;
+        const ang = (i / motes) * Math.PI * 2 + et * 0.6;
+        const rad = 40 + et * 130;
         const mx = Math.cos(ang) * rad;
         const my = rise + Math.sin(ang) * rad * 0.8;
-        this.soul.circle(mx, my, 3 + Math.sin(t * 3 + i) * 1.2).fill({ color, alpha: a });
+        this.soul.circle(mx, my, 3 + Math.sin(et * 3 + i) * 1.2).fill({ color, alpha: a });
         this.soul.circle(mx, my, 1.4).fill({ color: hexNum(skin.auraCore), alpha: a });
       }
     } else if (bucket === 'dark') {
       // The light dims quietly into the dark — a slow contraction.
-      const dimR = Math.max(0, 22 * (1 - t * 0.6));
+      const dimR = Math.max(0, 22 * (1 - et * 0.6));
       this.soul.circle(0, rise, dimR).fill({ color: hexNum(skin.auraCore), alpha: a * 0.4 });
     }
   }

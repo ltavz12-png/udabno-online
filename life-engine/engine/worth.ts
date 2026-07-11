@@ -44,6 +44,44 @@ export function lifeStageForWorth(worth: number): LifeStage {
   return stage;
 }
 
+/**
+ * Aging is driven by TIME LIVED (and pace/disposition), not by worth — so every
+ * life visibly grows infant → elder over its span, independent of how much worth
+ * it accrued or of the hidden mortality. Worth drives richness (aura, tree,
+ * payout); age drives the body.
+ */
+const STAGE_AGE_STARTS = [0, 2, 5, 10, 17, 27]; // "age units" for infant … elder
+
+/**
+ * Age units per real second, by pace & disposition. Pushing ages you fast;
+ * tending still ages you (time passes even at rest) so a patient, gentle life
+ * reaches old age. Disposition tilts the span: Spark burns fast, Steady endures.
+ */
+export function agingRatePerSecond(pace: Pace, dispositionRate: number): number {
+  const paceFactor = pace === 'push' ? 1.5 : pace === 'tend' ? 0.75 : 1.0;
+  // Compress disposition's influence so even Steady ages within a life's span.
+  const dispFactor = 0.6 + dispositionRate * 0.4;
+  return paceFactor * dispFactor;
+}
+
+export function lifeStageForAge(age: number): LifeStage {
+  let stage = LIFE_STAGES[0];
+  for (let i = 0; i < LIFE_STAGES.length; i++) {
+    if (age >= STAGE_AGE_STARTS[i]) stage = LIFE_STAGES[i];
+    else break;
+  }
+  return stage;
+}
+
+/** Fractional progress through the current age-stage, in [0, 1]. */
+export function ageStageProgress(age: number): number {
+  const idx = LIFE_STAGES.indexOf(lifeStageForAge(age));
+  const lo = STAGE_AGE_STARTS[idx];
+  const hi = STAGE_AGE_STARTS[idx + 1];
+  if (hi === undefined) return 1;
+  return Math.max(0, Math.min(1, (age - lo) / (hi - lo)));
+}
+
 /** Fractional progress through the current stage, in [0, 1] — for smooth morphs. */
 export function stageProgress(worth: number): number {
   const idx = LIFE_STAGES.findIndex((s) => s === lifeStageForWorth(worth));

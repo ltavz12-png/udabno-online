@@ -134,11 +134,27 @@ export function Reckoning() {
   if (!s) return null;
   const skin = getSkin(g.skinId);
   const win = s.payout > 0;
-  const verdict =
-    s.ending === 'sudden-death' ? t('reckoning.suddenDeath') : s.ending === 'fulfil' ? t('reckoning.fulfilled') : t('reckoning.rested');
+  const died = s.ending === 'sudden-death';
+  const verdict = died
+    ? s.beyond?.bucket === 'legacy'
+      ? t('reckoning.legacy')
+      : s.beyond?.bucket === 'dark'
+        ? t('reckoning.darkEnd')
+        : s.beyond
+          ? t('reckoning.passedOn')
+          : t('reckoning.suddenDeath')
+    : s.ending === 'fulfil'
+      ? t('reckoning.fulfilled')
+      : t('reckoning.rested');
   const poem =
-    s.ending === 'sudden-death'
-      ? skin.copy.suddenDeath
+    died
+      ? s.beyond?.bucket === 'legacy'
+        ? skin.copy.legacy
+        : s.beyond?.bucket === 'dark'
+          ? skin.copy.dark
+          : s.beyond
+            ? skin.copy.nothing
+            : skin.copy.suddenDeath
       : s.beyond?.bucket === 'legacy'
         ? skin.copy.legacy
         : s.beyond?.bucket === 'dark'
@@ -159,7 +175,9 @@ export function Reckoning() {
         <p className="poem">{poem}</p>
         <div className={`payout ${win ? 'win' : 'zero'}`}>{formatCurrency(s.payout, cfg.currency, cfg.locale)}</div>
         <div className="sub">
-          {win ? `${formatMultiplier(s.payoutMultiplier)} on ${formatCurrency(s.stake, cfg.currency, cfg.locale)}` : `The stake of ${formatCurrency(s.stake, cfg.currency, cfg.locale)} returns to the earth`}
+          {win
+            ? `${formatMultiplier(s.payoutMultiplier)} on ${formatCurrency(s.stake, cfg.currency, cfg.locale)}${died && s.beyond ? ` · from ${formatMultiplier(s.worthAtEnd)} at the end` : ''}`
+            : `The stake of ${formatCurrency(s.stake, cfg.currency, cfg.locale)} returns to the earth`}
         </div>
         <button className="primary" onClick={() => g.dismissReckoning()}>{t('reckoning.again')}</button>
       </div>

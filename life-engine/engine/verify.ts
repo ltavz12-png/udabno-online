@@ -34,7 +34,7 @@ export function verifyRound(
   houseEdge: number = DEFAULT_CONFIG.houseEdge,
 ): VerificationReport {
   const { hmac, u } = deriveFairness({ serverSeed, clientSeed, nonce });
-  const mortality = mortalityFromUniform(u, houseEdge);
+  const mortality = mortalityFromUniform(u, houseEdge, DEFAULT_CONFIG.deathBeyondMean);
   const serverSeedHash = hashServerSeed(serverSeed);
   return {
     serverSeed,

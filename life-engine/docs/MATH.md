@@ -13,22 +13,24 @@ stake `s`, mortality point `M`, worth `W`.
 ## 1. The single hidden outcome: the mortality point `M`
 
 Each round draws one hidden outcome, the mortality multiplier `M`, from the
-standard crash distribution. Given a uniform `u ∈ [0, 1)`:
+crash distribution generalised with a **death dividend** `μ = deathBeyondMean ∈
+[0, 1)` (default `0.25`). Given a uniform `u ∈ [0, 1)`:
 
 ```
-M = max(1, (1 − e) / (1 − u))          (engine/mortality.ts)
+M = max(1, ((1 − e) / (1 − u)) ^ (1 − μ))     (engine/mortality.ts)
 ```
 
 This gives, for every `v ≥ 1`:
 
-$$P(M \ge v) = \frac{1-e}{v}, \qquad P(M = 1) = e.$$
+$$P(M \ge v) = (1-e)\,v^{-\frac{1}{1-\mu}}, \qquad P(M = 1) = e.$$
 
-**Derivation.** For `v > 1`,
-`P(M ≥ v) = P((1−e)/(1−u) ≥ v) = P(u ≥ 1 − (1−e)/v) = (1−e)/v`.
-For `u ≤ e` the formula yields a value `≤ 1`, clamped to `1`, so
-`P(M = 1) = P(u ≤ e) = e` — a genuine instant-bust point mass. `M` is kept as a
-full-precision float (never quantised), which is what makes the identity below
-*exact* for every possible rest worth.
+With `μ = 0` this is exactly the standard crash law `P(M ≥ v) = (1−e)/v`. With
+`μ > 0` the curve is **steeper** (you reach mortality sooner on average); that
+surrendered upside is paid back as the death Beyond (§4), netting to the same
+RTP (§3). `P(M = 1) = P(u ≤ e) = e` is a genuine instant-bust point mass (an end
+at birth, which pays nothing). `M` is kept as a full-precision float (never
+quantised), which is what makes the identities below *exact* for every possible
+rest worth.
 
 ---
 
@@ -54,45 +56,57 @@ by `M` alone.
 Let the player rest at worth `v` (fulfilling an ambition `T` is exactly resting
 at `v = T`). Payout:
 
-- **Rest / Fulfil** with `v ≤ M`: `payout = s · v` (optionally × Beyond, §4).
-- **Sudden death**, `W` reaches `M` before resting: `payout = 0`.
+- **Rest / Fulfil** with `v ≤ M`: `payout = s · v` (optionally × a mean-1 Beyond
+  wager, §4.2). Resting always pays exactly the worth you see — WYSIWYG.
+- **Sudden death** (`W` reaches `M` first): `payout = s · M · μ · B`, where `B ∈
+  {L, 1, d}` is the three-outcome Beyond (§4) — a Legacy/Nothing/Dark End on the
+  worth-at-death. An end at birth (`M = 1`) pays nothing.
 
-**Theorem (strategy-independent RTP).** Any stopping rule whose decision is
-independent of `M` has expected payout `s · (1 − e)`.
+**Theorem (strategy-independent RTP).** Every strategy whose decisions are
+independent of `M` has expected payout `s · (1 − e)`, for any `μ ∈ [0, 1)`.
 
-*Proof.* A pure target `v` wins `v` iff `M ≥ v`:
+*Proof.* Fix a rest target `v` and write `a = 1/(1−μ)`, so `S(v) = P(M ≥ v) =
+(1−e)v^{−a}` with density `f(m) = (1−e)a·m^{−a−1}` and instant-bust mass `e`
+(paying 0). The Beyond has mean `E[B] = 1` (§4.1), so death pays `μ·m` in
+expectation at worth `m`. Then
 
-$$\mathbb{E}[\text{payout}] = s\,v\,P(M \ge v) = s\,v\,\frac{1-e}{v} = s\,(1-e).$$
+$$\mathbb{E}[\text{payout}]/s = \underbrace{v\,S(v)}_{\text{rest}} + \underbrace{\int_1^v \mu\,m\,f(m)\,dm}_{\text{death Beyond}} = (1-e)v^{1-a} + (1-e)\big(1 - v^{1-a}\big) = (1-e).$$
 
-This is independent of `v`. A general strategy chooses a (possibly random) rest
-worth `V` using only information independent of `M` (elapsed time, vitality,
-pacing, RNG) — it *cannot* use `M`, which is hidden. Conditioning on `V`:
+(The integral evaluates to `(1−e)(1 − v^{1−a})` because `a/(1−a)·μ = −1`.) The
+result is **independent of `v`** — and of `μ`. A general strategy rests at a
+(possibly random) worth `V` chosen without knowledge of `M`, so conditioning on
+`V` gives `E[payout] = E_V[s(1−e)] = s(1−e)`. ∎
 
-$$\mathbb{E}[\text{payout}] = \mathbb{E}_V\big[s\,V\,P(M \ge V)\big] = \mathbb{E}_V\big[s\,(1-e)\big] = s\,(1-e). \qquad\blacksquare$$
+So the steepened mortality (§1) exactly funds the death Beyond: dying sooner on
+average is worth precisely what dying now pays. Disposition, ambition, pace,
+re-declare, and the optional rest-Beyond move **variance and feel only**.
 
-Equivalently: the worth-at-risk process is a martingale after the edge, so by
-optional stopping every admissible stopping time yields the same expectation.
-Disposition, ambition, pace, re-declare, and the Beyond wager therefore move
-**variance and feel only**.
-
-> Not a strategy: *never resting* dies almost surely and returns `0` — this is
-> declining to cash out, exactly as in crash. Every strategy that actually rests
-> or fulfils returns `1 − e`.
+> The pathological *never-rest* strategy still returns `1 − e` in expectation
+> (`μ·E[M] = 1 − e`), but its payout is heavy-tailed (dominated by rare Legacy-on-
+> huge-worth events), so its finite-sample RTP converges slowly — see the note in
+> `RTP_REPORT.md`.
 
 ---
 
-## 4. The Beyond — an EV-neutral final wager
+## 4. The Beyond — three outcomes, mean exactly 1
 
-On the reckoning of a rested/fulfilled life, the player may (optionally, per the
-`beyondWager` declaration) route the banked worth through **The Beyond**: a
-three-bucket lottery with multiplier `B ∈ {L (Legacy), 1 (Nothing), d (Dark
-End)}`, calibrated so `E[B] = 1` **exactly**. Since `B` is independent of `M`
-and mean-1, `E[s·v·B] = s·v` — the payout expectation is unchanged, so RTP is
-untouched (§3 still holds). The Beyond only adds variance and drama.
+The Beyond is a three-bucket lottery with multiplier `B ∈ {L (Legacy), 1
+(Nothing), d (Dark End)}`, calibrated so `E[B] = 1` **exactly**. It appears in
+two places, both EV-neutral:
 
-**Calibration (`engine/beyond.ts`).** Let boldness `β ∈ [0,1]` (from the
-disposition) set the *spread mass* `s' = s_min + β(s_max − s_min)` — how often a
-life resolves to something other than Nothing. With Legacy `L` and Dark `d`:
+- **On death (default):** the life resolves into The Beyond on its worth-at-
+  death, paying `s·M·μ·B`. Mean `s·M·μ` — funded exactly by the steepened
+  mortality curve (§3). This is what makes dying a three-way reckoning
+  (Legacy / Nothing / Dark End) rather than a flat loss.
+- **On rest (optional wager):** if the player declared `beyondWager`, the banked
+  worth is routed through the same mean-1 lottery, `s·v·B`. Mean `s·v` — pure
+  variance, no EV change.
+
+### 4.1 Calibration (`engine/beyond.ts`)
+
+Let boldness `β ∈ [0,1]` (from the disposition) set the *spread mass* `s' =
+s_min + β(s_max − s_min)` — how often a life resolves to something other than
+Nothing. With Legacy `L` and Dark `d`:
 
 $$p_L = s'\frac{1-d}{L-d}, \quad p_d = s'\frac{L-1}{L-d}, \quad p_N = 1 - s'.$$
 
@@ -104,22 +118,17 @@ So `E[B] = 1` identically — bold lives (Spark) hit the extremes far more often
 than gentle ones (Steady) with **the same mean**. Unit-tested to 10 decimals
 across all boldness values and dispositions (`beyond.test.ts`).
 
-### 4.1 Why sudden death cannot pay (design theorem)
+### 4.2 Why this is the honest way to pay on death
 
-The brief's literal suggestion — a mean-1 Beyond multiplier applied to the
-*worth at death* — is **not** EV-invariant on a crash backbone, and we
-deliberately do not ship it. Consider the value of holding at worth `w`
-(survived to `w`). Over `dw`, survival probability is `w/(w+dw)`, death
-probability `dw/w`, and a death payout `B(w)`. Requiring "rest now" and
-"continue" to have equal value (the martingale/fair-game condition) gives
-
-$$s\,w = \Big(1 - \tfrac{dw}{w}\Big) s\,(w+dw) + \tfrac{dw}{w} B(w) \;\Rightarrow\; \tfrac{dw}{w}B(w) = 0 \;\Rightarrow\; B(w) = 0.$$
-
-Any positive death payout makes "keep pushing" strictly better than resting and
-breaks strategy-independence (and paying mean-1 × worth-at-death even diverges,
-since `E[M] = ∞`). Hence: **sudden death pays 0**, and The Beyond is applied to
-the *banked* worth of a rested/fulfilled life, where it is provably neutral.
-This is the correct, certifiable reading of the design.
+A naïve "mean-1 Beyond on the worth-at-death, on top of an unchanged crash
+curve" is **not** EV-invariant: it would make pushing to death strictly `+EV`
+(and even diverges, since the unsteepened `E[M] = ∞`). The fix is not to forbid
+paying on death — it is to **pay for it out of the mortality curve**. Setting
+`μ > 0` steepens `M` by exactly the exponent `1/(1−μ)` (§1); the funds recovered
+by dying sooner are returned as the death Beyond (§3 proof). With `deathBeyondMean
+= 0`, death pays nothing and the model collapses to classic crash. Operators
+tune the trade-off — bigger `μ` means a richer death Beyond but shorter lives —
+in one config field, and re-certify with `npm run rtp:report`.
 
 ---
 

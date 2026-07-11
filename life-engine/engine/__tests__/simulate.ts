@@ -89,6 +89,12 @@ export const STRATEGIES: readonly Strategy[] = [
       boldness: boldnessOf('steady'),
     }),
   },
+  {
+    // Never rests — always dies into the Beyond. Proves the death payout does
+    // NOT make pushing-to-death an exploit: it still returns exactly 1 - e.
+    name: 'never rest (push to death)',
+    decide: () => ({ restWorth: Infinity, target: Infinity, beyondWager: false, boldness: 0.5 }),
+  },
 ];
 
 export function runBucket(
@@ -103,7 +109,7 @@ export function runBucket(
   let sum = 0;
   let sumSq = 0;
   for (let i = 0; i < rounds; i++) {
-    const m = mortalityFromUniform(mRng(), cfg.houseEdge);
+    const m = mortalityFromUniform(mRng(), cfg.houseEdge, cfg.deathBeyondMean);
     const choice = strategy.decide(sRng);
     const payout = resolveLife({
       mortality: m,
