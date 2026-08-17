@@ -1,0 +1,16 @@
+node_modules
+dist
+.vite
+playwright-report
+test-results
+*.tsbuildinfo
+# emitted TS artifacts (sources are .ts/.tsx only)
+engine/**/*.js
+server/**/*.js
+src/**/*.js
+scripts/**/*.js
+config/**/*.js
+
+# single-file build outputs
+dist-single
+the-life-engine.html

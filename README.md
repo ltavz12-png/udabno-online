@@ -1,3 +1,16 @@
+## 🎴 The Life Engine (iGaming product)
+
+This repository also contains **The Life Engine** — a complete, provably-fair
+HTML5 casino game in the crash family — under [`life-engine/`](./life-engine).
+It is a self-contained Vite + React + PixiJS + TypeScript product with a
+framework-free, Monte-Carlo-certified math engine (RTP 97% ±0.1% across every
+strategy), a swappable mock RGS, a procedurally-animated human-life avatar, a
+social live feed, sound, accessibility, skins, and full docs. See
+[`life-engine/README.md`](./life-engine/README.md) to run it
+(`cd life-engine && npm install && npm run dev`).
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
